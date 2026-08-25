@@ -1,0 +1,40 @@
+# Quy tắc phân tích tĩnh. `flutter analyze` phải sạch trước khi báo xong một
+# task (CONVENTIONS.md mục "Cách làm việc mong muốn" điểm 7).
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # riverpod_lint 3.x chạy trên hệ thống plugin gốc của Dart analyzer
+  # (analysis_server_plugin), không còn cần custom_lint như file 06 mô tả.
+  # Nó bắt các lỗi kinh điển: dùng ref.read trong build(), quên .autoDispose,
+  # provider khai báo sai.
+  plugins:
+    - riverpod_lint
+
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+  errors:
+    # Quên chạy build_runner là lỗi, không phải cảnh báo.
+    uri_has_not_been_generated: error
+
+linter:
+  rules:
+    # Bắt buộc const ở chỗ dùng được — giảm rebuild thừa.
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    # Widget phải có key để Flutter nhận diện đúng khi cây widget đổi.
+    use_key_in_widget_constructors: true
+    # Bắt kiểu trả về tường minh cho hàm public — đọc code dễ hơn nhiều.
+    always_declare_return_types: true
+    # Chặn việc gõ số/màu bừa thì lint không làm được — đó là việc của code review.
+    directives_ordering: true
+    require_trailing_commas: true

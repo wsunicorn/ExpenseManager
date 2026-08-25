@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Đỏ rượu vang, khớp màu chủ đề mặc định của app. -->
+    <color name="ic_launcher_background">#6D1F35</color>
+</resources>
