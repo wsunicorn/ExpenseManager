@@ -52,6 +52,9 @@ class SecuritySection extends ConsumerWidget {
           setupMode: true,
           onUnlocked: (pin) async {
             await ref.read(appLockProvider).setPin(pin);
+            // Vừa gõ PIN xong ngay tại đây rồi, đừng để lớp khoá bật lên bắt
+            // gõ lại lần nữa.
+            ref.read(lockGateProvider.notifier).markUnlockedAfterSetup();
             if (ctx.mounted) Navigator.of(ctx).pop();
           },
         ),
@@ -82,11 +85,34 @@ class _BiometricTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Máy không có cảm biến thì ẩn hẳn, đừng hiện công tắc bấm không ăn.
-    final coCamBien = ref.watch(biometricAvailableProvider).value ?? false;
-    if (!coCamBien) return const SizedBox.shrink();
-
+    final doCamBien = ref.watch(biometricAvailableProvider);
     final dangBat = ref.watch(biometricEnabledProvider).value ?? false;
+
+    // Còn đang dò cảm biến — giữ chỗ, đừng để dòng nhảy vào rồi nhảy ra.
+    if (doCamBien.isLoading) {
+      return const ListTile(
+        leading: Icon(Icons.fingerprint),
+        title: Text('Mở khoá bằng vân tay'),
+        subtitle: Text('Đang kiểm tra cảm biến…'),
+      );
+    }
+
+    final coCamBien = doCamBien.value ?? false;
+
+    // Máy không dùng được vân tay thì vẫn hiện dòng này, chỉ làm mờ và nói rõ
+    // vì sao. Bản trước ẩn hẳn nó đi — và đó chính là lỗi "bật vân tay không
+    // được": không có gì để bấm, cũng không có câu nào giải thích.
+    if (!coCamBien) {
+      return const ListTile(
+        leading: Icon(Icons.fingerprint),
+        enabled: false,
+        title: Text('Mở khoá bằng vân tay'),
+        subtitle: Text(
+          'Máy chưa đăng ký vân tay hoặc khuôn mặt. Vào Cài đặt của điện '
+          'thoại thêm vân tay rồi quay lại đây.',
+        ),
+      );
+    }
 
     return SwitchListTile(
       secondary: const Icon(Icons.fingerprint),

@@ -190,3 +190,80 @@ final class AppLockProvider
 }
 
 String _$appLockHash() => r'18df9a93fc1c461f900c7443fc1c87823582b307';
+
+/// App đang bị khoá hay không — thứ quyết định có hiện màn hình nhập PIN.
+///
+/// `null` nghĩa là **chưa biết**: còn đang hỏi DB xem có đặt PIN không. Phải
+/// phân biệt với `false`, vì nếu coi lúc chưa biết là "không khoá" thì trong
+/// vài khung hình đầu người dùng đã nhìn thấy toàn bộ số liệu rồi mới bị che —
+/// khoá kiểu đó không khoá được gì.
+
+@ProviderFor(LockGate)
+final lockGateProvider = LockGateProvider._();
+
+/// App đang bị khoá hay không — thứ quyết định có hiện màn hình nhập PIN.
+///
+/// `null` nghĩa là **chưa biết**: còn đang hỏi DB xem có đặt PIN không. Phải
+/// phân biệt với `false`, vì nếu coi lúc chưa biết là "không khoá" thì trong
+/// vài khung hình đầu người dùng đã nhìn thấy toàn bộ số liệu rồi mới bị che —
+/// khoá kiểu đó không khoá được gì.
+final class LockGateProvider extends $NotifierProvider<LockGate, bool?> {
+  /// App đang bị khoá hay không — thứ quyết định có hiện màn hình nhập PIN.
+  ///
+  /// `null` nghĩa là **chưa biết**: còn đang hỏi DB xem có đặt PIN không. Phải
+  /// phân biệt với `false`, vì nếu coi lúc chưa biết là "không khoá" thì trong
+  /// vài khung hình đầu người dùng đã nhìn thấy toàn bộ số liệu rồi mới bị che —
+  /// khoá kiểu đó không khoá được gì.
+  LockGateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lockGateProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lockGateHash();
+
+  @$internal
+  @override
+  LockGate create() => LockGate();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool?>(value),
+    );
+  }
+}
+
+String _$lockGateHash() => r'60c4829e3e541930567fe826d05f44e441f140b8';
+
+/// App đang bị khoá hay không — thứ quyết định có hiện màn hình nhập PIN.
+///
+/// `null` nghĩa là **chưa biết**: còn đang hỏi DB xem có đặt PIN không. Phải
+/// phân biệt với `false`, vì nếu coi lúc chưa biết là "không khoá" thì trong
+/// vài khung hình đầu người dùng đã nhìn thấy toàn bộ số liệu rồi mới bị che —
+/// khoá kiểu đó không khoá được gì.
+
+abstract class _$LockGate extends $Notifier<bool?> {
+  bool? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool?, bool?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool?, bool?>,
+              bool?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

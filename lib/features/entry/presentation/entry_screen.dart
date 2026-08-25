@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -144,16 +147,37 @@ class _TabSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(entryFormProvider).tab;
+    // `select` chứ không watch cả state: nếu watch cả state thì mỗi ký tự gõ
+    // vào ô Ghi chú cũng làm thanh tab này vẽ lại. Đây là nguyên nhân chính
+    // khiến gõ ghi chú thấy sượng.
+    final current = ref.watch(entryFormProvider.select((s) => s.tab));
+
+    // Chỉ một ví thì không có gì để chuyển đi đâu — bỏ tab Chuyển ví.
+    final soVi = ref.watch(
+      walletListProvider().select((a) => a.value?.length ?? 0),
+    );
+    final cacTab = soVi >= 2
+        ? EntryTab.values
+        : const [EntryTab.expense, EntryTab.income];
+
+    // Nếu đang đứng ở tab Chuyển ví mà ví vừa bị gộp còn một, phải kéo về tab
+    // Chi — `SegmentedButton` sẽ ném assertion nếu giá trị đang chọn không nằm
+    // trong danh sách segment.
+    final dangChon = cacTab.contains(current) ? current : EntryTab.expense;
+    if (dangChon != current) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ref.read(entryFormProvider.notifier).setTab(dangChon),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Tokens.screenPadding),
       child: SegmentedButton<EntryTab>(
         segments: [
-          for (final tab in EntryTab.values)
+          for (final tab in cacTab)
             ButtonSegment(value: tab, label: Text(tab.label)),
         ],
-        selected: {current},
+        selected: {dangChon},
         showSelectedIcon: false,
         onSelectionChanged: (s) =>
             ref.read(entryFormProvider.notifier).setTab(s.first),
@@ -168,7 +192,7 @@ class _DateRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final date = ref.watch(entryFormProvider).date;
+    final date = ref.watch(entryFormProvider.select((s) => s.date));
     final notifier = ref.read(entryFormProvider.notifier);
 
     // `DateFormat` với locale 'vi' cần initializeDateFormatting — được gọi
@@ -216,18 +240,22 @@ class _WalletRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final form = ref.watch(entryFormProvider);
+    // Chỉ lấy ba trường thật sự dùng tới. Watch cả state ở đây đồng nghĩa ô
+    // chọn ví vẽ lại theo từng ký tự Ghi chú.
+    final tab = ref.watch(entryFormProvider.select((s) => s.tab));
+    final walletId = ref.watch(entryFormProvider.select((s) => s.walletId));
+    final toWalletId = ref.watch(entryFormProvider.select((s) => s.toWalletId));
     final notifier = ref.read(entryFormProvider.notifier);
 
     // Chưa chọn ví thì mặc định ví đầu danh sách, ngay trong lần build này.
-    final selected = form.walletId ?? wallets.first.wallet.id;
-    if (form.walletId == null) {
+    final selected = walletId ?? wallets.first.wallet.id;
+    if (walletId == null) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => notifier.setWallet(selected),
       );
     }
 
-    if (form.tab != EntryTab.transfer) {
+    if (tab != EntryTab.transfer) {
       // Mot vi thi o chon vi khong cho nguoi dung quyet dinh gi - bo di cho
       // man hinh nhap ngan lai mot dong.
       if (wallets.length < 2) return const SizedBox.shrink();
@@ -258,7 +286,7 @@ class _WalletRow extends ConsumerWidget {
           child: _WalletDropdown(
             label: 'Đến ví',
             wallets: wallets,
-            value: form.toWalletId,
+            value: toWalletId,
             // Chặn chọn trùng ví nguồn (quy tắc ở mục B.3).
             excludeId: selected,
             onChanged: notifier.setToWallet,
@@ -567,6 +595,10 @@ class _SaveBar extends ConsumerWidget {
           SnackBar(content: Text(reason)),
         );
       case SaveOk():
+        // Rung nhẹ thay cho thanh thông báo. Vẫn phải có *một* tín hiệu xác
+        // nhận, nếu không thì nhìn số tiền về 0 mà không biết là đã lưu hay
+        // vừa bị xoá trắng. Rung không che nút Lưu và không cần chờ tắt.
+        unawaited(HapticFeedback.mediumImpact());
         ref.read(entryFormProvider.notifier).resetAfterSave();
         // Không hiện SnackBar "Đã lưu / Hoàn tác" nữa.
         //

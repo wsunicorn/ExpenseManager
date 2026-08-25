@@ -54,6 +54,8 @@ key.properties
 android/key.properties
 *.jks
 *.keystore
+# Keystore that san dang dung la .p12 - phai chan ca duoi nay
+*.p12
 upload-keystore.*
 
 # ── Code sinh ra ─────────────────────────────────────────────────────────────

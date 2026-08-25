@@ -6,6 +6,9 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/recurring/presentation/pending_occurrences_sheet.dart';
 import 'features/recurring/presentation/recurring_providers.dart';
+import 'features/settings/domain/lock_timing.dart';
+import 'features/settings/presentation/app_lock_providers.dart';
+import 'features/settings/presentation/lock_gate.dart';
 import 'features/widget_home/presentation/home_widget_providers.dart';
 import 'shared/providers/color_scheme_provider.dart';
 import 'shared/providers/theme_mode_provider.dart';
@@ -33,15 +36,26 @@ class _SoThuChiAppState extends ConsumerState<SoThuChiApp>
     super.dispose();
   }
 
+  /// Thời điểm app rời tiền cảnh gần nhất, để tính xem có phải khoá lại không.
+  DateTime? _lucVaoNen;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Quét lại khi app quay lại tiền cảnh: người dùng có thể để app mở qua đêm,
-    // và sáng hôm sau đã sang kỳ mới.
-    if (state == AppLifecycleState.resumed) _quetDinhKy();
+    if (state == AppLifecycleState.resumed) {
+      // Quét lại khi app quay lại tiền cảnh: người dùng có thể để app mở qua
+      // đêm, và sáng hôm sau đã sang kỳ mới.
+      _quetDinhKy();
+
+      if (shouldRelock(leftAt: _lucVaoNen, now: DateTime.now())) {
+        ref.read(lockGateProvider.notifier).lockIfEnabled();
+      }
+      _lucVaoNen = null;
+    }
 
     // Cập nhật widget mỗi khi app vào nền — đó là lúc người dùng sắp nhìn
     // màn hình chính (đặc tả mục I).
     if (state == AppLifecycleState.paused) {
+      _lucVaoNen = DateTime.now();
       ref.read(homeWidgetServiceProvider).update();
     }
   }
@@ -111,6 +125,11 @@ class _SoThuChiAppState extends ConsumerState<SoThuChiApp>
       ],
 
       routerConfig: appRouter,
+
+      // Lớp khoá bọc ngoài mọi màn hình. Đặt ở `builder` chứ không ở từng
+      // route: chỉ cần sót một route là khoá thủng.
+      builder: (context, child) =>
+          AppLockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

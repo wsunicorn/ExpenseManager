@@ -74,6 +74,24 @@ class DayTransactionsSheet extends ConsumerWidget {
                 ],
               ),
             ),
+            // Chạm để sửa là thao tác đúng nhưng vô hình: không có mũi tên,
+            // không có nút, nên người dùng không đoán ra là dòng bấm được.
+            // Một câu ở đây rẻ hơn nhiều so với việc thêm nút vào từng dòng.
+            if (async.value case final list? when list.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Tokens.screenPadding,
+                  0,
+                  Tokens.screenPadding,
+                  Tokens.md,
+                ),
+                child: Text(
+                  'Chạm vào một dòng để sửa · vuốt sang trái để xoá',
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             const Divider(height: 1),
             Expanded(
               child: switch (async) {

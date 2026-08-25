@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -46,6 +49,46 @@ AppLockController appLock(Ref ref) => AppLockController(
       ref.watch(settingsRepositoryProvider),
     );
 
+/// App đang bị khoá hay không — thứ quyết định có hiện màn hình nhập PIN.
+///
+/// `null` nghĩa là **chưa biết**: còn đang hỏi DB xem có đặt PIN không. Phải
+/// phân biệt với `false`, vì nếu coi lúc chưa biết là "không khoá" thì trong
+/// vài khung hình đầu người dùng đã nhìn thấy toàn bộ số liệu rồi mới bị che —
+/// khoá kiểu đó không khoá được gì.
+@Riverpod(keepAlive: true)
+class LockGate extends _$LockGate {
+  @override
+  bool? build() {
+    unawaited(_khoiTao());
+    return null;
+  }
+
+  Future<void> _khoiTao() async {
+    try {
+      state = await ref.read(appLockProvider).isLockEnabled;
+    } on Object {
+      // Đọc bảng settings hỏng thì **mở khoá**, đừng giữ nguyên `null`.
+      //
+      // Giữ `null` nghĩa là tấm che ở lại vĩnh viễn: app trắng màn, không thao
+      // tác được gì, gỡ cài đặt lại thì mất sạch dữ liệu. Mất lớp khoá là cái
+      // giá nhỏ hơn nhiều — và nếu DB đã không đọc nổi thì cũng chẳng còn gì
+      // trong đó để mà khoá.
+      state = false;
+    }
+  }
+
+  void unlock() => state = false;
+
+  /// Khoá lại. Chỉ có tác dụng khi người dùng thật sự đã đặt PIN.
+  Future<void> lockIfEnabled() async {
+    if (await ref.read(appLockProvider).isLockEnabled) state = true;
+  }
+
+  /// Gọi sau khi vừa đặt PIN xong trong màn hình cài đặt: đã xác thực ngay tại
+  /// đó rồi, đừng bắt nhập lại lần nữa.
+  void markUnlockedAfterSetup() => state = false;
+}
+
 /// Đặt, đổi, gỡ PIN và mở khoá bằng sinh trắc.
 class AppLockController {
   AppLockController(this._settings);
@@ -88,10 +131,19 @@ class AppLockController {
       _settings.write(LockKeys.biometricEnabled, enabled.toString());
 
   /// Thiết bị có vân tay / khuôn mặt dùng được không.
+  ///
+  /// Trước đây yêu cầu `canCheckBiometrics && isDeviceSupported()`. Đó là lý
+  /// do công tắc vân tay **biến mất** trên máy thật: trên nhiều máy Android,
+  /// `canCheckBiometrics` trả `false` dù vân tay đã đăng ký đầy đủ — nó phản
+  /// ánh phần cứng theo cách không nhất quán giữa các hãng. Nguồn đáng tin là
+  /// `getAvailableBiometrics()`: có phần tử nghĩa là có sinh trắc dùng được
+  /// ngay. Chấp nhận một trong hai đường là đủ, và không bỏ sót máy nào.
   Future<bool> canUseBiometrics() async {
     if (!biometricSupported) return false;
     try {
-      return await _auth.canCheckBiometrics && await _auth.isDeviceSupported();
+      if (!await _auth.isDeviceSupported()) return false;
+      if (await _auth.canCheckBiometrics) return true;
+      return (await _auth.getAvailableBiometrics()).isNotEmpty;
     } on Exception {
       // Thiết bị không hỗ trợ hoặc plugin lỗi — coi như không có, đừng làm
       // sập màn hình khoá vì một tính năng phụ.
@@ -109,6 +161,18 @@ class AppLockController {
         localizedReason: 'Mở khoá Sổ thu chi',
         biometricOnly: true,
       );
+    } on PlatformException {
+      // Một số máy từ chối `biometricOnly: true` (hãng cấu hình thiếu, hoặc
+      // vân tay tạm bị khoá sau nhiều lần sai). Thử lại bằng cách cho phép cả
+      // khoá màn hình của máy — vẫn là xác thực thật, và người dùng luôn còn
+      // đường nhập PIN của app nếu cả hai đều hỏng.
+      try {
+        return await _auth.authenticate(
+          localizedReason: 'Mở khoá Sổ thu chi',
+        );
+      } on Exception {
+        return false;
+      }
     } on Exception {
       return false;
     }

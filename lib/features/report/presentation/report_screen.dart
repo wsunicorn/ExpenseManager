@@ -330,6 +330,26 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
     final tong = cats.fold(0, (s, c) => s + c.amount);
     final cs = context.colorScheme;
 
+    // Có danh mục nhưng tổng bằng 0 thì mọi phép `amount * 100 / tong` ra NaN,
+    // và `NaN.round()` **ném lỗi** chứ không trả 0 — cả thẻ biểu đồ biến thành
+    // ô trắng. Trường hợp hiếm, nhưng hỏng thì hỏng ngay giữa màn hình.
+    if (tong <= 0) {
+      return Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(Tokens.xxl),
+          child: Center(
+            child: Text(
+              'Kỳ này chưa có số liệu để vẽ biểu đồ.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final sections = <PieChartSectionData>[
       for (var i = 0; i < grouped.slices.length; i++)
         _section(grouped.slices[i], i, tong),

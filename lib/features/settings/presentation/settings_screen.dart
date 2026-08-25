@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/app_info.dart';
 import '../../../core/db/tables/app_settings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/money_colors.dart';
@@ -153,7 +154,8 @@ class SettingsScreen extends ConsumerWidget {
               horizontal: Tokens.screenPadding,
             ),
             child: Text(
-              'Sổ thu chi · offline hoàn toàn · không quảng cáo\n'
+              'Sổ thu chi phiên bản $kAppVersion\n'
+              'Offline hoàn toàn · không quảng cáo\n'
               'Dữ liệu nằm trên máy bạn, không gửi đi đâu cả.',
               textAlign: TextAlign.center,
               style: context.textTheme.labelSmall?.copyWith(

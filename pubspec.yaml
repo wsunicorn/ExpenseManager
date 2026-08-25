@@ -1,7 +1,7 @@
 name: so_thu_chi
 description: "Sổ thu chi cá nhân — offline hoàn toàn, không quảng cáo."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.3+4
 
 environment:
   sdk: ^3.13.1
