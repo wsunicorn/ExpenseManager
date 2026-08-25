@@ -19,11 +19,12 @@ Future<void> main() async {
   // Dựng container trước runApp để đọc được cờ onboarding, rồi dùng lại chính
   // container đó cho app. Tạo hai container khác nhau sẽ có hai kết nối DB.
   final container = ProviderContainer();
-  onboardingCompleted =
-      await container.read(settingsRepositoryProvider).read(
-                SettingKeys.onboardingDone,
-              ) ==
-          'true';
+  setOnboardingCompleted(
+    completed: await container.read(settingsRepositoryProvider).read(
+              SettingKeys.onboardingDone,
+            ) ==
+        'true',
+  );
 
   runApp(
     UncontrolledProviderScope(

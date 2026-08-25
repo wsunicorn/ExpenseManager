@@ -46,15 +46,50 @@ abstract final class AppRoutes {
 /// Router của go_router không đọc provider được, nên giá trị được nạp ở
 /// `main()` trước khi dựng app rồi gán vào đây. Đọc bất đồng bộ ngay trong
 /// `redirect` sẽ khiến màn hình chớp một nhịp trước khi chuyển.
-bool onboardingCompleted = true;
+///
+/// **Ghi database thôi là chưa đủ — phải gọi [setOnboardingCompleted].**
+/// Đây từng là một bug chặn hoàn toàn: màn hình onboarding ghi
+/// `onboarding_done=true` rồi `context.go(entry)`, nhưng biến này vẫn `false`
+/// nên `redirect` đá ngược về onboarding ngay lập tức. Bấm "Xong" hay "Bỏ qua"
+/// đều như không có tác dụng, và không có cách nào vào được app.
+bool _onboardingCompleted = true;
+
+bool get onboardingCompleted => _onboardingCompleted;
+
+/// Cập nhật cờ trong bộ nhớ cho khớp với database.
+///
+/// Gọi **ngay sau** mỗi lần ghi `SettingKeys.onboardingDone`, trước khi điều
+/// hướng. Có setter riêng thay vì gán thẳng biến để chỗ này dễ tìm và dễ nhớ.
+void setOnboardingCompleted({required bool completed}) {
+  _onboardingCompleted = completed;
+}
+
+/// Quyết định chuyển hướng. Tách thành hàm thuần để test được — logic này nhỏ
+/// nhưng sai thì app không vào được, nên đáng có test riêng.
+String? onboardingRedirect({
+  required bool completed,
+  required String location,
+}) {
+  final dangOOnboarding = location == AppRoutes.onboarding;
+
+  // Chưa xong onboarding mà đang ở chỗ khác → ép về onboarding.
+  if (!completed && !dangOOnboarding) return AppRoutes.onboarding;
+
+  // Đã xong rồi mà vẫn ở onboarding → thả vào app.
+  //
+  // Nhánh này là lưới an toàn: thiếu nó thì mọi lỗi đồng bộ cờ đều biến thành
+  // "kẹt ở onboarding, không thoát được".
+  if (completed && dangOOnboarding) return AppRoutes.entry;
+
+  return null;
+}
 
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.entry,
-  redirect: (context, state) {
-    final dangOOnboarding = state.matchedLocation == AppRoutes.onboarding;
-    if (!onboardingCompleted && !dangOOnboarding) return AppRoutes.onboarding;
-    return null;
-  },
+  redirect: (context, state) => onboardingRedirect(
+    completed: _onboardingCompleted,
+    location: state.matchedLocation,
+  ),
   routes: [
     // Onboarding nằm ngoài khung 5 tab: nó chiếm trọn màn hình và không có
     // thanh điều hướng dưới đáy.

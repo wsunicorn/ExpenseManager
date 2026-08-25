@@ -141,6 +141,8 @@ class SettingsScreen extends ConsumerWidget {
               await ref
                   .read(settingsRepositoryProvider)
                   .write(SettingKeys.onboardingDone, 'false');
+              // Đồng bộ cờ, nếu không router sẽ đá ngược vào app ngay.
+              setOnboardingCompleted(completed: false);
               if (context.mounted) context.go(AppRoutes.onboarding);
             },
           ),

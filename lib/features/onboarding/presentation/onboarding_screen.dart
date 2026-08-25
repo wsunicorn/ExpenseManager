@@ -45,6 +45,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await ref
         .read(settingsRepositoryProvider)
         .write(SettingKeys.onboardingDone, 'true');
+
+    // Đồng bộ cờ trong bộ nhớ TRƯỚC khi điều hướng. Thiếu dòng này thì
+    // `redirect` của router vẫn thấy cờ cũ và đá ngược về đây ngay lập tức.
+    setOnboardingCompleted(completed: true);
+
     if (mounted) context.go(AppRoutes.entry);
   }
 
