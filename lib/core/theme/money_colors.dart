@@ -60,11 +60,14 @@ class MoneyColors extends ThemeExtension<MoneyColors> {
   /// Bảng màu chế độ sáng. Mọi màu đã kiểm tương phản ≥ 4.5:1 trên nền sáng
   /// của Material 3 (yêu cầu ở file 07 mục 5).
   static const MoneyColors light = MoneyColors(
-    income: Color(0xFF0F7B3F),
+    // Xanh duong chu khong phai xanh luc: `07_UI_UX.md` muc 2.3 cho phep ca
+    // hai, va MoneyNote dung xanh duong. Chu du an dung MoneyNote nhieu nam
+    // nen giu mau quen mat, khong bat hoc lai.
+    income: Color(0xFF1565C0),
     expense: Color(0xFFC62828),
     transfer: Color(0xFF5F6368),
     adjustment: Color(0xFF6A4C93),
-    incomeSurface: Color(0xFFDFF3E6),
+    incomeSurface: Color(0xFFE3F0FB),
     expenseSurface: Color(0xFFFCE4E4),
     budgetSafe: Color(0xFF0F7B3F),
     budgetWarn: Color(0xFF9A6700),
@@ -74,11 +77,11 @@ class MoneyColors extends ThemeExtension<MoneyColors> {
   /// Bảng màu chế độ tối. Không phải bản sáng bị làm tối — là bộ màu riêng,
   /// sáng hơn và bớt bão hoà, để đọc được trên nền tối thật sự của M3.
   static const MoneyColors dark = MoneyColors(
-    income: Color(0xFF6BD08E),
+    income: Color(0xFF7FB8F0),
     expense: Color(0xFFFF897D),
     transfer: Color(0xFFA9A5B0),
     adjustment: Color(0xFFC4A7F0),
-    incomeSurface: Color(0xFF16311F),
+    incomeSurface: Color(0xFF16283A),
     expenseSurface: Color(0xFF3A1D1B),
     budgetSafe: Color(0xFF6BD08E),
     budgetWarn: Color(0xFFF5C451),

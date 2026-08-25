@@ -46,6 +46,8 @@ class ReportScreen extends ConsumerWidget {
                       SizedBox(height: Tokens.lg),
                       _InsightsCard(),
                       SizedBox(height: Tokens.lg),
+                      _BreakdownTabs(),
+                      SizedBox(height: Tokens.md),
                       _CategoryDonut(),
                       SizedBox(height: Tokens.lg),
                       _CategoryTable(),
@@ -121,6 +123,35 @@ class _PeriodSelector extends ConsumerWidget {
           tooltip: 'Kỳ sau',
         ),
       ],
+    );
+  }
+}
+
+/// Tab con Chi tiêu / Thu nhập, quyết định biểu đồ tròn và bảng bên dưới vẽ
+/// loại nào. Học từ MoneyNote — biểu đồ tròn chỉ vẽ được một loại nên bắt buộc
+/// phải có cách đổi.
+class _BreakdownTabs extends ConsumerWidget {
+  const _BreakdownTabs();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hienTai = ref.watch(reportBreakdownTypeProvider);
+
+    return SegmentedButton<TransactionType>(
+      segments: const [
+        ButtonSegment(
+          value: TransactionType.expense,
+          label: Text('Chi tiêu'),
+        ),
+        ButtonSegment(
+          value: TransactionType.income,
+          label: Text('Thu nhập'),
+        ),
+      ],
+      selected: {hienTai},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) =>
+          ref.read(reportBreakdownTypeProvider.notifier).set(s.first),
     );
   }
 }
@@ -272,11 +303,28 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
 
   @override
   Widget build(BuildContext context) {
-    final cats = ref
-            .watch(reportCategoryTotalsProvider(TransactionType.expense))
-            .value ??
-        const <CategoryTotal>[];
-    if (cats.isEmpty) return const SizedBox.shrink();
+    final loai = ref.watch(reportBreakdownTypeProvider);
+    final cats =
+        ref.watch(reportCategoryTotalsProvider(loai)).value ??
+            const <CategoryTotal>[];
+    if (cats.isEmpty) {
+      return Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(Tokens.xxl),
+          child: Center(
+            child: Text(
+              loai == TransactionType.expense
+                  ? 'Kỳ này chưa có khoản chi nào.'
+                  : 'Kỳ này chưa có khoản thu nào.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     final grouped = groupForPieChart(cats);
     final tong = cats.fold(0, (s, c) => s + c.amount);
@@ -305,10 +353,16 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cơ cấu chi tiêu', style: context.textTheme.titleMedium),
+            Text(
+              loai == TransactionType.expense
+                  ? 'Cơ cấu chi tiêu'
+                  : 'Cơ cấu thu nhập',
+              style: context.textTheme.titleMedium,
+            ),
             const SizedBox(height: Tokens.lg),
             SizedBox(
-              height: 220,
+              // Cao hơn vòng tròn để nhãn phần trăm nằm ngoài không bị cắt.
+              height: 260,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -325,10 +379,17 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
                         sectionsSpace: 2,
                         pieTouchData: PieTouchData(
                           touchCallback: (event, response) {
-                            setState(() {
-                              _touchedIndex = response
-                                  ?.touchedSection?.touchedSectionIndex;
-                            });
+                            // fl_chart trả -1 khi chạm vào lỗ donut hoặc ra
+                            // ngoài vòng tròn. Không lọc thì `slices[-1]` ném
+                            // RangeError và cả biểu đồ biến mất — đúng lỗi
+                            // "chạm vào là trắng xóa".
+                            final i = response?.touchedSection
+                                ?.touchedSectionIndex;
+                            final hopLe = i != null &&
+                                i >= 0 &&
+                                i < grouped.slices.length;
+                            if (_touchedIndex == (hopLe ? i : null)) return;
+                            setState(() => _touchedIndex = hopLe ? i : null);
                           },
                         ),
                       ),
@@ -340,7 +401,12 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Tổng chi', style: context.textTheme.labelSmall),
+                      Text(
+                        loai == TransactionType.expense
+                            ? 'Tổng chi'
+                            : 'Tổng thu',
+                        style: context.textTheme.labelSmall,
+                      ),
                       MoneyText(
                         _touchedIndex != null &&
                                 _touchedIndex! < grouped.slices.length
@@ -376,13 +442,20 @@ class _CategoryDonutState extends ConsumerState<_CategoryDonut> {
 
   PieChartSectionData _section(CategoryTotal c, int index, int tong) {
     final chon = _touchedIndex == index;
+    final phanTram = c.amount * 100 / tong;
+
     return PieChartSectionData(
       value: c.amount.toDouble(),
       color: Color(c.colorValue),
-      title: '${(c.amount * 100 / tong).round()}%',
+      // Lát quá mỏng thì nhãn chồng lên nhau thành một vòng chữ rối — bỏ nhãn,
+      // số đầy đủ vẫn có ở bảng bên dưới.
+      title: phanTram < 4 ? '' : '${phanTram.toStringAsFixed(1)}%',
       radius: chon ? 64 : 56,
+      // Đẩy nhãn ra ngoài vòng thay vì đè lên lát màu: chữ trắng trên nền màu
+      // nhạt rất khó đọc, và đây cũng là cách MoneyNote làm.
+      titlePositionPercentageOffset: 1.45,
       titleStyle: context.textTheme.labelSmall?.copyWith(
-        color: Colors.white,
+        color: context.colorScheme.onSurface,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -395,10 +468,10 @@ class _CategoryTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cats = ref
-            .watch(reportCategoryTotalsProvider(TransactionType.expense))
-            .value ??
-        const <CategoryTotal>[];
+    final loai = ref.watch(reportBreakdownTypeProvider);
+    final cats =
+        ref.watch(reportCategoryTotalsProvider(loai)).value ??
+            const <CategoryTotal>[];
     if (cats.isEmpty) return const SizedBox.shrink();
 
     final tong = cats.fold(0, (s, c) => s + c.amount);

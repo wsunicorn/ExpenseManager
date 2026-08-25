@@ -62,6 +62,77 @@ abstract class _$ReportSelectionController extends $Notifier<ReportSelection> {
   }
 }
 
+/// Dang xem co cau Chi tieu hay Thu nhap.
+///
+/// MoneyNote co hai tab con nay ngay duoi the tom tat, va do la thu app cu
+/// lam dung: bieu do tron chi ve duoc mot loai, nen phai co cach doi.
+
+@ProviderFor(ReportBreakdownType)
+final reportBreakdownTypeProvider = ReportBreakdownTypeProvider._();
+
+/// Dang xem co cau Chi tieu hay Thu nhap.
+///
+/// MoneyNote co hai tab con nay ngay duoi the tom tat, va do la thu app cu
+/// lam dung: bieu do tron chi ve duoc mot loai, nen phai co cach doi.
+final class ReportBreakdownTypeProvider
+    extends $NotifierProvider<ReportBreakdownType, TransactionType> {
+  /// Dang xem co cau Chi tieu hay Thu nhap.
+  ///
+  /// MoneyNote co hai tab con nay ngay duoi the tom tat, va do la thu app cu
+  /// lam dung: bieu do tron chi ve duoc mot loai, nen phai co cach doi.
+  ReportBreakdownTypeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reportBreakdownTypeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reportBreakdownTypeHash();
+
+  @$internal
+  @override
+  ReportBreakdownType create() => ReportBreakdownType();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TransactionType value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TransactionType>(value),
+    );
+  }
+}
+
+String _$reportBreakdownTypeHash() =>
+    r'800c75f89f9afd04ca7ccd01a2b51c3f6e8a4e48';
+
+/// Dang xem co cau Chi tieu hay Thu nhap.
+///
+/// MoneyNote co hai tab con nay ngay duoi the tom tat, va do la thu app cu
+/// lam dung: bieu do tron chi ve duoc mot loai, nen phai co cach doi.
+
+abstract class _$ReportBreakdownType extends $Notifier<TransactionType> {
+  TransactionType build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<TransactionType, TransactionType>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<TransactionType, TransactionType>,
+              TransactionType,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// Tổng thu chi của kỳ đang xem.
 
 @ProviderFor(reportTotals)

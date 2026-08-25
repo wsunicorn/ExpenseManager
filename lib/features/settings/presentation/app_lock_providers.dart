@@ -22,6 +22,25 @@ Stream<bool> pinIsSet(Ref ref) => ref
     .watch(LockKeys.pinHash)
     .map((v) => v != null && v.isNotEmpty);
 
+/// Đã bật mở khoá bằng vân tay chưa.
+///
+/// Là `Stream` đọc từ bảng settings, **không phải `FutureBuilder`**. Trước đây
+/// dùng FutureBuilder nên bật/tắt xong giao diện không biết mà vẽ lại — phải
+/// thoát app vào lại mới thấy công tắc đổi. Mọi trạng thái mà nút bấm làm thay
+/// đổi đều phải đi qua provider phản ứng như thế này.
+@riverpod
+Stream<bool> biometricEnabled(Ref ref) => ref
+    .watch(settingsRepositoryProvider)
+    .watch(LockKeys.biometricEnabled)
+    .map((v) => v == 'true');
+
+/// Thiết bị có cảm biến vân tay dùng được không.
+///
+/// Đọc một lần là đủ — phần cứng không đổi giữa chừng.
+@riverpod
+Future<bool> biometricAvailable(Ref ref) =>
+    ref.watch(appLockProvider).canUseBiometrics();
+
 @Riverpod(keepAlive: true)
 AppLockController appLock(Ref ref) => AppLockController(
       ref.watch(settingsRepositoryProvider),

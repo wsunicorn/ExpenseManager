@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' show DateUtils;
 
@@ -99,14 +101,25 @@ class TransactionRepository {
       ),
     );
 
+    // Hai viec duoi day KHONG duoc chan nut Luu.
+    //
+    // Kiem nguong ngan sach doc them tu DB, con cap nhat widget man hinh chinh
+    // thi ba truy van cong mot luot goi qua kenh platform. Await ca hai lam
+    // moi lan bam Luu kho gan nua giay - du de cam thay giat.
+    //
+    // Ca hai deu la viec phu: giao dich da ghi xong roi, va neu chung that bai
+    // thi cung khong anh huong so lieu.
     if (type == TransactionType.expense) {
-      await onExpenseRecorded?.call(
-        date: date,
-        categoryId: categoryId,
-        spentDelta: amount,
+      unawaited(
+        onExpenseRecorded?.call(
+          date: date,
+          categoryId: categoryId,
+          spentDelta: amount,
+        ) ??
+            Future<void>.value(),
       );
     }
-    await onDataChanged?.call();
+    unawaited(onDataChanged?.call() ?? Future<void>.value());
 
     return SaveOk([id]);
   }
@@ -177,7 +190,7 @@ class TransactionRepository {
       }
     });
 
-    await onDataChanged?.call();
+    unawaited(onDataChanged?.call() ?? Future<void>.value());
     return SaveOk(ids);
   }
 
@@ -278,6 +291,6 @@ class TransactionRepository {
         await _dao.deleteById(id);
       }
     });
-    await onDataChanged?.call();
+    unawaited(onDataChanged?.call() ?? Future<void>.value());
   }
 }

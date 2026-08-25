@@ -31,7 +31,9 @@ class ReminderController extends _$ReminderController {
   @override
   void build() {}
 
-  Future<void> setEnabled(bool enabled) async {
+  /// Tra `false` khi nguoi dung tu choi quyen thong bao - giao dien can biet
+  /// de giai thich, thay vi de cong tac tu bat roi tat khong ly do.
+  Future<bool> setEnabled({required bool enabled}) async {
     final settings = ref.read(settingsRepositoryProvider);
     final notif = ref.read(notificationServiceProvider);
 
@@ -39,7 +41,7 @@ class ReminderController extends _$ReminderController {
       // Xin quyền trước khi ghi cờ: người dùng từ chối mà cờ vẫn bật thì công
       // tắc nói dối — nó bật nhưng chẳng bao giờ có thông báo nào.
       final duocPhep = await notif.requestPermission();
-      if (!duocPhep) return;
+      if (!duocPhep) return false;
 
       final gio = int.tryParse(
             await settings.read(LockKeys.reminderHour) ?? '21',
@@ -51,6 +53,7 @@ class ReminderController extends _$ReminderController {
     }
 
     await settings.write(LockKeys.reminderEnabled, enabled.toString());
+    return true;
   }
 
   Future<void> setHour(int hour) async {

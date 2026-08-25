@@ -91,6 +91,18 @@ class ReportSelectionController extends _$ReportSelectionController {
   }
 }
 
+/// Dang xem co cau Chi tieu hay Thu nhap.
+///
+/// MoneyNote co hai tab con nay ngay duoi the tom tat, va do la thu app cu
+/// lam dung: bieu do tron chi ve duoc mot loai, nen phai co cach doi.
+@riverpod
+class ReportBreakdownType extends _$ReportBreakdownType {
+  @override
+  TransactionType build() => TransactionType.expense;
+
+  void set(TransactionType type) => state = type;
+}
+
 /// Tổng thu chi của kỳ đang xem.
 @riverpod
 Stream<DayTotals> reportTotals(Ref ref) {

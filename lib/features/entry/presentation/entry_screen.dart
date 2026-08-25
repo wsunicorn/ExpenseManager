@@ -28,7 +28,10 @@ class EntryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final form = ref.watch(entryFormProvider);
+    // Chi nghe `tab` chu khong ca form: man hinh goc chi doi bo cuc khi doi
+    // tab. Watch ca form thi go mot ky tu vao o Ghi chu cung ve lai toan bo
+    // luoi danh muc.
+    final tab = ref.watch(entryFormProvider.select((s) => s.tab));
     final walletsAsync = ref.watch(walletListProvider());
 
     return Scaffold(
@@ -68,7 +71,7 @@ class EntryScreen extends ConsumerWidget {
                       const SizedBox(height: Tokens.md),
                       const _AmountDisplay(),
                       const SizedBox(height: Tokens.lg),
-                      if (form.tab == EntryTab.transfer)
+                      if (tab == EntryTab.transfer)
                         const _FeeRow()
                       else
                         const _CategoryGrid(),
@@ -225,6 +228,10 @@ class _WalletRow extends ConsumerWidget {
     }
 
     if (form.tab != EntryTab.transfer) {
+      // Mot vi thi o chon vi khong cho nguoi dung quyet dinh gi - bo di cho
+      // man hinh nhap ngan lai mot dong.
+      if (wallets.length < 2) return const SizedBox.shrink();
+
       return _WalletDropdown(
         label: 'Ví',
         wallets: wallets,
@@ -358,11 +365,12 @@ class _AmountDisplay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final form = ref.watch(entryFormProvider);
+    final soTien = ref.watch(entryFormProvider.select((s) => s.amount));
+    final tab = ref.watch(entryFormProvider.select((s) => s.tab));
     final cs = context.colorScheme;
     final money = context.moneyColors;
 
-    final color = switch (form.tab) {
+    final color = switch (tab) {
       EntryTab.expense => money.expense,
       EntryTab.income => money.income,
       EntryTab.transfer => money.transfer,
@@ -376,7 +384,7 @@ class _AmountDisplay extends ConsumerWidget {
         onTap: () async {
           final value = await MoneyKeypad.show(
             context,
-            initialValue: form.amount,
+            initialValue: soTien,
           );
           if (value != null) {
             ref.read(entryFormProvider.notifier).setAmount(value);
@@ -389,8 +397,8 @@ class _AmountDisplay extends ConsumerWidget {
               Text('Số tiền', style: context.textTheme.labelSmall),
               const Spacer(),
               MoneyText(
-                form.amount,
-                color: form.amount > 0 ? color : cs.onSurfaceVariant,
+                soTien,
+                color: soTien > 0 ? color : cs.onSurfaceVariant,
                 style: context.textTheme.displaySmall,
               ),
             ],
@@ -437,8 +445,9 @@ class _CategoryGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final form = ref.watch(entryFormProvider);
-    final type = form.tab.categoryType!;
+    final tab = ref.watch(entryFormProvider.select((s) => s.tab));
+    final dangChon = ref.watch(entryFormProvider.select((s) => s.categoryId));
+    final type = tab.categoryType!;
     final categoriesAsync = ref.watch(categoryListProvider(type));
 
     return categoriesAsync.when(
@@ -466,7 +475,7 @@ class _CategoryGrid extends ConsumerWidget {
             final c = categories[i];
             return _CategoryTile(
               category: c,
-              selected: form.categoryId == c.id,
+              selected: dangChon == c.id,
               onTap: () =>
                   ref.read(entryFormProvider.notifier).setCategory(c.id),
             );
@@ -557,31 +566,30 @@ class _SaveBar extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(reason)),
         );
-      case SaveOk(:final ids):
+      case SaveOk():
         ref.read(entryFormProvider.notifier).resetAfterSave();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Đã lưu'),
-            // Hoàn tác trong 5 giây — file 07 mục 1.1: mọi hành động xoá hoặc
-            // ghi đều phải rút lại được, vì tiền là chủ đề gây căng thẳng.
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Hoàn tác',
-              onPressed: () => repo.deleteTransactions(ids),
-            ),
-          ),
-        );
+        // Không hiện SnackBar "Đã lưu / Hoàn tác" nữa.
+        //
+        // Đặc tả mục B.4 có yêu cầu nút Hoàn tác, nhưng chủ dự án dùng thật
+        // rồi và thấy nó vướng: thanh này che mất nút Lưu, và khi nhập liên
+        // tiếp vài khoản thì nó chồng lên nhau không tắt kịp.
+        //
+        // Hoàn tác vẫn còn đường khác và tiện hơn: sang tab Lịch, chạm ngày
+        // vừa nhập, vuốt trái để xoá.
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final form = ref.watch(entryFormProvider);
+    // Chi nghe hai thu quyet dinh nut nay trong nhu the nao.
+    final coTheLuu = ref.watch(entryFormProvider.select((s) => s.canSave));
+    final tab = ref.watch(entryFormProvider.select((s) => s.tab));
+
     final hasWallets =
         (ref.watch(walletListProvider()).value ?? const []).isNotEmpty;
     if (!hasWallets) return const SizedBox.shrink();
 
-    final label = switch (form.tab) {
+    final label = switch (tab) {
       EntryTab.expense => 'Nhập khoản Tiền chi',
       EntryTab.income => 'Nhập khoản Tiền thu',
       EntryTab.transfer => 'Chuyển tiền',
@@ -594,7 +602,7 @@ class _SaveBar extends ConsumerWidget {
           width: double.infinity,
           height: Tokens.minTouchTarget + Tokens.sm,
           child: FilledButton(
-            onPressed: form.canSave ? () => _save(context, ref) : null,
+            onPressed: coTheLuu ? () => _save(context, ref) : null,
             child: Text(label),
           ),
         ),

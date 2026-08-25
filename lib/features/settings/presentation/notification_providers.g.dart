@@ -170,7 +170,7 @@ final class ReminderControllerProvider
 }
 
 String _$reminderControllerHash() =>
-    r'dfb7c515d6c9d579d9dea854e00074eb4852ebdf';
+    r'9d1273beb3b2ff37ce4f7afc2c36fdafe53129e8';
 
 /// Bật/tắt và đặt giờ nhắc.
 

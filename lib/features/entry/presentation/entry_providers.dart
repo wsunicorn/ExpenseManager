@@ -122,6 +122,36 @@ class EntryFormState {
         _ => amount > 0 && walletId != null && categoryId != null,
       };
 
+  /// So sanh theo GIA TRI, khong theo danh tinh.
+  ///
+  /// Thieu hai ham nay la nguyen nhan chinh gay lag: Riverpod so sanh state
+  /// bang `==`, ma `copyWith` luon tao object moi, nen MOI widget dang watch
+  /// deu ve lai sau mot thay doi bat ky - ke ca go mot ky tu vao o Ghi chu.
+  /// Man hinh Nhap vao co 7 cho watch, trong do co luoi 14 danh muc.
+  @override
+  bool operator ==(Object other) =>
+      other is EntryFormState &&
+      other.tab == tab &&
+      other.date == date &&
+      other.walletId == walletId &&
+      other.toWalletId == toWalletId &&
+      other.categoryId == categoryId &&
+      other.amount == amount &&
+      other.fee == fee &&
+      other.note == note;
+
+  @override
+  int get hashCode => Object.hash(
+        tab,
+        date,
+        walletId,
+        toWalletId,
+        categoryId,
+        amount,
+        fee,
+        note,
+      );
+
   EntryFormState copyWith({
     EntryTab? tab,
     DateTime? date,
